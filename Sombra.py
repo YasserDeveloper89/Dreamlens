@@ -88,4 +88,3 @@ with tabs[4]:
     resumen = f"Narrativa detectada en {region} sobre {tematica}. Propagación emocional: {emocion}."
     st.text_area("Resumen del Informe:", resumen, height=100)
     st.download_button("Descargar Informe PDF", data=resumen, file_name="informe_sombra.txt")
-    
