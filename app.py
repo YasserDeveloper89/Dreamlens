@@ -1,93 +1,58 @@
-import streamlit as st
-import pandas as pd
-import plotly.express as px
-import requests
+HydroAlert Perú - Versión Premium PRO
 
-st.set_page_config(layout="wide", page_title="HydroAlert Perú – PRO")
+import streamlit as st import pandas as pd import requests import plotly.express as px from datetime import datetime
 
-st.markdown(
-    """
-    <style>
-    body { background-color: #f4f6f9; }
-    .main { background-color: #ffffff; padding: 1.5em; border-radius: 10px; }
-    h1, h2, h3, h4 { color: #003366; }
-    .stButton>button { background-color: #003366; color: white; font-weight: bold; }
-    .stVideo { border: 1px solid #ddd; border-radius: 10px; }
-    </style>
-    """, unsafe_allow_html=True
-)
+--- Estilo Profesional ---
 
-st.title("HydroAlert Perú – Monitoreo Inteligente")
+st.set_page_config(page_title="HydroAlert Perú", layout="wide")
 
-# Cargar CSV en el mismo directorio
-try:
-    df = pd.read_csv("rios_peru_sample.csv")
-except FileNotFoundError:
-    st.error("Archivo CSV no encontrado. Asegúrate de tener 'rios_peru_sample.csv' en el mismo directorio.")
-    st.stop()
+--- Estilo visual con CSS personalizado ---
 
-if "region" not in df.columns or "nivel" not in df.columns:
-    st.error("El archivo CSV debe tener las columnas 'region' y 'nivel'.")
-    st.stop()
+st.markdown(""" <style> body { background-color: #111; color: white; } .stApp { background-color: #1e1e1e; } .big-font { font-size:24px !important; font-weight:bold; color: #00f5d4; } .video-title { font-size:18px !important; margin-top: 10px; } </style> """, unsafe_allow_html=True)
 
-# Selector de región
-region = st.selectbox("Selecciona una región:", sorted(df["region"].unique()))
-datos_region = df[df["region"] == region]
+--- Carga de datos CSV (en mismo directorio) ---
 
-# Nivel de riesgo
-if not datos_region.empty:
-    nivel = datos_region["nivel"].values[0]
-else:
-    nivel = "Desconocido"
+try: df = pd.read_csv("rios_peru_sample.csv") except Exception as e: st.error("Error al cargar el CSV: " + str(e)) st.stop()
 
-color_nivel = {
-    "VERDE": "green",
-    "AMARILLO": "orange",
-    "ROJO": "red"
-}.get(nivel.upper(), "gray")
+--- Barra lateral de selección ---
 
-st.markdown(f"### Nivel de riesgo predominante: <span style='color:{color_nivel}'>{nivel.upper()}</span>", unsafe_allow_html=True)
+st.sidebar.title("Opciones") rio_seleccionado = st.sidebar.selectbox("Selecciona un río:", df["rio"].unique())
 
-# Gráfico de niveles de río por región
-fig = px.bar(datos_region, x="fecha", y="nivel_num", title=f"Niveles del río - {region}", color="nivel", height=400)
-st.plotly_chart(fig, use_container_width=True)
+--- Filtrado de datos ---
 
-# Clima actual (ejemplo con Open-Meteo API)
-with st.spinner("Obteniendo datos meteorológicos..."):
-    weather_url = "https://api.open-meteo.com/v1/forecast?latitude=-12.0464&longitude=-77.0428&current=temperature_2m&timezone=auto"
-    res = requests.get(weather_url).json()
-    temp = res.get("current", {}).get("temperature_2m", None)
-    if temp:
-        st.metric("Temperatura actual en Lima", f"{temp}°C")
-    else:
-        st.warning("No se pudo obtener el clima actual.")
+df_rio = df[df["rio"] == rio_seleccionado]
 
-# Noticias (simuladas pero puedes conectarlo a RSS o News API)
-st.subheader("Noticias recientes sobre ríos y clima en Perú")
-news = [
-    {"titulo": "Crecida del río Rímac activa alertas en Lima", "url": "https://andina.pe/agencia/noticia-crecida-del-rio-rimac-activan-alertas-957462.aspx"},
-    {"titulo": "INDECI recomienda estar alerta por lluvias intensas", "url": "https://www.indeci.gob.pe/"},
-    {"titulo": "SENAMHI emite advertencia hidrológica en la selva", "url": "https://www.senamhi.gob.pe/"}
-]
+--- Título Principal ---
 
-for item in news:
-    st.markdown(f"- [{item['titulo']}]({item['url']})")
+st.title("HydroAlert Perú - Monitoreo Inteligente") st.markdown(f"### Río seleccionado: {rio_seleccionado}")
 
-# Videos educativos embebidos
-st.subheader("Videos informativos sobre prevención y monitoreo")
+--- Nivel actual del río ---
 
-video_urls = [
-    "https://www.youtube.com/embed/Afv7X-XGxS8",
-    "https://www.youtube.com/embed/WoHgXguC8KI",
-    "https://www.youtube.com/embed/Xcb4w5xu6Rg",
-    "https://www.youtube.com/embed/zqsIIcbqomQ",
-    "https://www.youtube.com/embed/EpjmYy9K3XU",
-    "https://www.youtube.com/embed/UjQPT7iHuUs"
-]
+ultimo_valor = df_rio.iloc[-1] nivel = ultimo_valor["nivel"]
 
-cols = st.columns(2)
-for i, url in enumerate(video_urls):
-    with cols[i % 2]:
-        st.video(url)
+if nivel < 2: alerta = "Verde" color_alerta = "#00ff00" elif nivel < 3.5: alerta = "Amarillo" color_alerta = "#ffff00" else: alerta = "Rojo" color_alerta = "#ff0000"
 
-st.info("Fuente de datos: SENAMHI, INDECI, Open-Meteo – Información actualizada automáticamente.")
+st.markdown(f"Nivel actual: {nivel} m") st.markdown(f"<div style='padding:10px;background-color:{color_alerta};border-radius:10px;'> <span class='big-font'>Alerta: {alerta}</span></div>", unsafe_allow_html=True)
+
+--- Gráfico de nivel del río ---
+
+fig = px.line(df_rio, x="fecha", y="nivel", title=f"Historial del Río {rio_seleccionado}", labels={"fecha": "Fecha", "nivel": "Nivel (m)"}) st.plotly_chart(fig, use_container_width=True)
+
+--- Pronóstico del tiempo actual ---
+
+st.subheader("Clima Actual en Lima") try: clima = requests.get("https://api.open-meteo.com/v1/forecast?latitude=-12.04&longitude=-77.03&current=temperature_2m,precipitation,weathercode&timezone=auto").json() temp = clima['current']['temperature_2m'] lluvias = clima['current']['precipitation'] st.markdown(f"Temperatura actual: {temp} °C") st.markdown(f"Precipitación: {lluvias} mm/h") except: st.warning("No se pudo cargar el pronóstico del clima en tiempo real.")
+
+--- Noticias Actualizadas ---
+
+st.subheader("Noticias Recientes sobre Ríos y Clima") try: noticias = requests.get("https://www.peru21.pe/arcio/rss/peru21.xml") if noticias.status_code == 200: from xml.etree import ElementTree root = ElementTree.fromstring(noticias.text) for item in root.findall(".//item")[:5]: title = item.find("title").text link = item.find("link").text st.markdown(f"- {title}") except: st.warning("No se pudieron cargar las noticias.")
+
+--- Videos Educativos (YouTube verificados) ---
+
+st.subheader("Videos Informativos") video_urls = [ "https://www.youtube.com/watch?v=zqsIIcbqomQ", "https://www.youtube.com/watch?v=UY2Dvlq1xQk", "https://www.youtube.com/watch?v=v5LZqIjhDEY", "https://www.youtube.com/watch?v=lOlUAPfJXrQ", "https://www.youtube.com/watch?v=mtqQ3XwDH-Q", "https://www.youtube.com/watch?v=dUUlSgoaI8o" ]
+
+for url in video_urls: st.video(url)
+
+--- Pie de página ---
+
+st.markdown("---") st.markdown("Aplicación desarrollada para monitoreo y prevención hidrometeorológica en Perú. Datos actualizados y visuales en tiempo real.")
+
