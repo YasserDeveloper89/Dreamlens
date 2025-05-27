@@ -3,13 +3,13 @@ import os
 from openai import OpenAI
 from dotenv import load_dotenv
 
-# Cargar clave desde .env
+# Cargar la clave de API desde .env
 load_dotenv()
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
 st.set_page_config(page_title="DreamLens", layout="centered", page_icon="💤")
-st.title("🌙 DreamLens App")
-st.subheader("Cuenta tu sueño. Visualiza lo que tu mente imaginó mientras dormías!")
+st.title("🌙 DreamLens")
+st.subheader("Cuenta tu sueño. Visualiza lo que tu mente imaginó mientras dormías.")
 
 with st.expander("¿Cómo funciona?"):
     st.markdown("""
@@ -54,7 +54,7 @@ Convierte este sueño en una breve historia literaria onírica y poética (máxi
             )
             story = story_response.choices[0].message.content
 
-            # Imagen
+            # Imagen realista del sueño
             image_prompt = f"Una escena realista y onírica basada en este sueño: {dream_input}"
             image_response = client.images.generate(
                 prompt=image_prompt,
@@ -63,7 +63,7 @@ Convierte este sueño en una breve historia literaria onírica y poética (máxi
             )
             image_url = image_response.data[0].url
 
-        # Resultados
+        # Mostrar resultados
         st.success("¡Sueño interpretado!")
         st.markdown("### Interpretación simbólica:")
         st.markdown(interpretation)
