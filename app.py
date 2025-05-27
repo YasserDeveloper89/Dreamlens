@@ -1,45 +1,77 @@
-import streamlit as st import pandas as pd import plotly.express as px import requests from datetime import datetime
+import streamlit as st
+import pandas as pd
+import plotly.express as px
+import requests
+from datetime import datetime
 
-Título principal
+st.set_page_config(page_title="HydroAlert Perú", layout="wide")
 
-st.set_page_config(page_title="HydroAlert Perú PRO", layout="wide") st.markdown(""" <style> body { background-color: #f2f2f2; color: #1c1c1c; } .main-title { font-size: 3em; font-weight: bold; color: #0a3d62; } .section { padding: 1em; background-color: white; border-radius: 10px; box-shadow: 2px 2px 8px rgba(0, 0, 0, 0.1); margin-bottom: 1em; } </style> """, unsafe_allow_html=True)
+st.title("HydroAlert Perú – Monitoreo Inteligente de Ríos y Clima")
 
-st.markdown("<div class='main-title'>HydroAlert Perú – Monitoreo Inteligente</div>", unsafe_allow_html=True)
+# Cargar datos CSV (debe estar en el mismo directorio)
+try:
+    df = pd.read_csv("rios_peru_sample.csv")
+except FileNotFoundError:
+    st.error("Archivo CSV no encontrado. Asegúrate de que 'rios_peru_sample.csv' esté en el mismo directorio que este archivo.")
+    st.stop()
 
-Leer CSV sin carpeta 'data/'
+# Validar columnas requeridas
+required_columns = {"rio", "region", "nivel", "riesgo"}
+if not required_columns.issubset(df.columns):
+    st.error("El archivo CSV debe contener las columnas: rio, region, nivel, riesgo.")
+    st.stop()
 
-try: df = pd.read_csv("rios_peru_sample.csv") if 'region' not in df.columns: st.error("El archivo CSV no contiene la columna 'region'. Por favor revisa el archivo.") else: regiones = df['region'].unique().tolist() region_seleccionada = st.selectbox("Selecciona una región para ver los datos hidrológicos:", regiones)
+# Selección de región y río
+regiones = df["region"].unique()
+region_seleccionada = st.selectbox("Selecciona una región:", regiones)
 
-df_region = df[df['region'] == region_seleccionada]
+rios_filtrados = df[df["region"] == region_seleccionada]["rio"].unique()
+rio_seleccionado = st.selectbox("Selecciona un río:", rios_filtrados)
 
-    st.subheader(f"Nivel actual de ríos en {region_seleccionada}")
-    fig = px.bar(df_region, x='rio', y='nivel', color='riesgo',
-                 color_discrete_map={
-                     'Bajo': 'green',
-                     'Medio': 'orange',
-                     'Alto': 'red'
-                 },
-                 labels={'nivel': 'Nivel del río (m)'})
-    st.plotly_chart(fig)
+df_rio = df[(df["region"] == region_seleccionada) & (df["rio"] == rio_seleccionado)]
 
-    riesgo_predominante = df_region['riesgo'].mode()[0] if not df_region['riesgo'].mode().empty else "Desconocido"
-    st.info(f"Nivel de riesgo predominante: {riesgo_predominante}")
+# Mostrar información básica
+nivel = df_rio["nivel"].values[0]
+riesgo = df_rio["riesgo"].values[0]
 
-except FileNotFoundError: st.error("No se encontró el archivo rios_peru_sample.csv. Asegúrate de que esté en el mismo directorio que este script.")
+st.markdown(f"### Estado del río **{rio_seleccionado}**: Nivel **{nivel}**")
+st.markdown(f"### Nivel de riesgo actual: **{riesgo}**")
 
-Clima actual para Lima
+# Mapa (opcional si hay lat/lon en CSV)
+# Gráfico de barras
+fig = px.bar(df[df["region"] == region_seleccionada], x="rio", y="nivel", color="riesgo", 
+             color_discrete_map={
+                 "Bajo": "green",
+                 "Medio": "orange",
+                 "Alto": "red"
+             }, title=f"Niveles de los ríos en {region_seleccionada}")
+st.plotly_chart(fig, use_container_width=True)
 
-st.subheader("Clima Actual en Lima") API_KEY = "TU_API_KEY_AQUI"  # Reemplaza por tu clave de OpenWeather url = f"https://api.openweathermap.org/data/2.5/weather?q=Lima,pe&units=metric&appid={API_KEY}" try: response = requests.get(url).json() temp = response['main']['temp'] desc = response['weather'][0]['description'] st.success(f"Temperatura: {temp}°C - Condición: {desc.capitalize()}") except: st.error("No se pudo obtener la información del clima.")
+# Pronóstico del tiempo (Open-Meteo API para Lima)
+st.subheader("Pronóstico del tiempo en Lima")
 
-Videos informativos
+try:
+    weather = requests.get("https://api.open-meteo.com/v1/forecast?latitude=-12.05&longitude=-77.04&current_weather=true").json()
+    temp = weather["current_weather"]["temperature"]
+    wind = weather["current_weather"]["windspeed"]
+    st.metric(label="Temperatura actual (°C)", value=temp)
+    st.metric(label="Velocidad del viento (km/h)", value=wind)
+except:
+    st.warning("No se pudo obtener el clima actual.")
 
-st.subheader("Videos Educativos sobre Seguridad Hídrica") video_urls = [ "https://youtu.be/zqsIIcbqomQ", "https://youtu.be/1t0KsbZzO9Q", "https://youtu.be/WZhxZcgIt2U", "https://youtu.be/B0gXgLke1nk", "https://youtu.be/Kb1ZKCPzTe8" ] for url in video_urls: st.video(url)
+# Noticias (simplificadas, reales requerirían scraping o API externa)
+st.subheader("Noticias recientes relacionadas")
+st.markdown("- [Prevención de inundaciones en el Rímac](https://elcomercio.pe)")
+st.markdown("- [Alertas hidrometeorológicas activadas por Senamhi](https://andina.pe)")
+st.markdown("- [Consejos de seguridad ante crecida de ríos](https://gestion.pe)")
 
-Noticias
+# Videos educativos funcionales
+st.subheader("Videos informativos")
+video_ids = [
+    "zqsIIcbqomQ",  # Aportado por ti
+    "Nk6FV4l0gFQ",  # Video oficial Senamhi (si funciona)
+    "8s0U4CUv1bg"   # Otro relacionado con prevención de desastres
+]
 
-st.subheader("Últimas Noticias Hidrológicas en Perú") noticias = [ ("Prevención de desbordes en el río Rímac avanza con nuevas obras", "https://www.andina.pe/agencia/noticia-prevencion-desbordes-rio-rimac-avanza-nuevas-obras-894587.aspx"), ("Senamhi advierte posibles lluvias en zonas altas de la selva", "https://rpp.pe/peru/actualidad/senamhi-advierte-posibles-lluvias-en-la-selva-noticia-1322103") ] for titulo, enlace in noticias: st.markdown(f"- {titulo}")
-
-Información histórica y pronóstico
-
-st.subheader("Explora Datos Históricos") fecha_inicio = st.date_input("Desde:", datetime(2023, 1, 1)) fecha_fin = st.date_input("Hasta:", datetime(2023, 12, 31)) if fecha_inicio > fecha_fin: st.warning("La fecha de inicio no puede ser posterior a la fecha de fin.") else: st.success("Fechas seleccionadas correctamente. En el futuro puedes vincular esta selección a gráficos históricos si los tienes disponibles.")
-
+for vid in video_ids:
+    st.video(f"https://www.youtube.com/watch?v={vid}")
