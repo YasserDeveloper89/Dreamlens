@@ -1,4 +1,3 @@
-
 import streamlit as st
 import pandas as pd
 import plotly.express as px
@@ -7,57 +6,69 @@ from datetime import datetime
 
 st.set_page_config(page_title="HydroAlert Perú", layout="wide")
 
-# Estilos personalizados
-st.markdown('''
-    <style>
-    .main {
-        background-color: #f4f4f4;
-        color: #333;
-        font-family: 'Segoe UI', sans-serif;
-    }
-    h1, h2, h3 {
-        color: #0a3d62;
-    }
-    .stButton>button {
-        background-color: #079992;
-        color: white;
-        border-radius: 8px;
-        height: 3em;
-        width: 100%;
-        font-size: 16px;
-    }
-    </style>
-''', unsafe_allow_html=True)
+st.markdown("<h1 style='color:#0A5D5E'>HydroAlert Perú – Monitoreo Inteligente</h1>", unsafe_allow_html=True)
 
-st.title("HydroAlert Perú – Monitoreo Inteligente")
+# Cargar datos hidrológicos desde el mismo directorio
+@st.cache_data
+def obtener_datos_hidrologicos():
+    return pd.read_csv("rios_peru_sample.csv")
 
-# Cargar datos simulados de ríos
-df = pd.read_csv("rios_peru_sample.csv")
+df = obtener_datos_hidrologicos()
 
-# Mostrar alerta basada en nivel
-nivel_actual = df['nivel'].iloc[-1]
-alerta = "verde" if nivel_actual < 3 else "amarillo" if nivel_actual < 5 else "rojo"
-color_alerta = {"verde": "green", "amarillo": "orange", "rojo": "red"}[alerta]
+# Selección por río y región
+region = st.selectbox("Selecciona una región:", sorted(df["region"].unique()))
+ríos = df[df["region"] == region]["rio"].unique()
+río = st.selectbox("Selecciona un río:", sorted(ríos))
 
-st.markdown(f"<h2>Estado del río: <span style='color:{color_alerta}'>{alerta.upper()}</span></h2>", unsafe_allow_html=True)
+datos_río = df[(df["region"] == region) & (df["rio"] == río)]
 
-# Gráfico del nivel del río
-fig = px.line(df, x='fecha', y='nivel', title='Nivel del río en los últimos días')
+st.subheader(f"Estado actual del río {río}")
+estado = datos_río["estado"].values[0]
+color_estado = {"VERDE": "green", "AMARILLO": "orange", "ROJO": "red"}
+st.markdown(f"<h3 style='color:{color_estado.get(estado, 'gray')}'>Estado: {estado}</h3>", unsafe_allow_html=True)
+
+# Gráfico interactivo de caudal
+fig = px.line(datos_río, x="fecha", y="nivel_caudal", title=f"Nivel de caudal del río {río} (histórico)")
 st.plotly_chart(fig, use_container_width=True)
 
-# Clima en tiempo real
-st.subheader("Clima actual en Lima, Perú")
-weather = requests.get("https://wttr.in/Lima?format=3").text
-st.info(weather)
+# Clima actual por ciudad
+st.subheader("Clima actual en Perú")
+ciudades = ["Lima", "Cusco", "Arequipa", "Piura"]
+ciudad = st.selectbox("Selecciona una ciudad:", ciudades)
 
-# Noticias
-st.subheader("Noticias recientes sobre clima e infraestructura hídrica")
-st.markdown('''
-- [Senamhi advierte lluvias intensas](https://www.senamhi.gob.pe)
-- [Proyecto de represas en la selva](https://andina.pe)
-- [Medidas ante crecidas del río](https://gestion.pe)
-''')
+def obtener_clima(ciudad):
+    api_key = "6cbcbfddda724bcdbd114711241305"  # demo key de WeatherAPI
+    url = f"http://api.weatherapi.com/v1/current.json?key={api_key}&q={ciudad}&lang=es"
+    respuesta = requests.get(url)
+    if respuesta.status_code == 200:
+        data = respuesta.json()
+        return {
+            "temp_c": data["current"]["temp_c"],
+            "condition": data["current"]["condition"]["text"],
+            "icon": "https:" + data["current"]["condition"]["icon"]
+        }
+    return None
 
-# Video informativo
-st.subheader("Video informativo")
-st.video("https://www.youtube.com/watch?v=TP5qPJlRzJQ")
+clima = obtener_clima(ciudad)
+if clima:
+    st.markdown(f"**{ciudad}**: {clima['temp_c']}°C – {clima['condition']}")
+    st.image(clima["icon"], width=50)
+
+# Noticias reales (con enlaces)
+st.subheader("Noticias recientes sobre hidrología y clima en Perú")
+noticias = [
+    {
+        "titulo": "SENAMHI alerta aumento de caudales en la región Loreto",
+        "url": "https://www.senamhi.gob.pe/?p=avisos"
+    },
+    {
+        "titulo": "Estudio revela cambios drásticos en el caudal del río Rímac",
+        "url": "https://andina.pe/agencia/noticia-senamhi-rio-rimac"
+    }
+]
+for noticia in noticias:
+    st.markdown(f"- [{noticia['titulo']}]({noticia['url']})")
+
+# Video informativo funcional
+st.subheader("Video informativo sobre riesgo hídrico")
+st.video("https://youtu.be/zqsIIcbqomQ?si=wXxAZxSaeGNNK8YZ")
