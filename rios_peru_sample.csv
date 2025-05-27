@@ -1,9 +1,11 @@
-rio,region,nivel,riesgo
-Rímac,Lima,3.2,Alto
-Mantaro,Junín,2.5,Medio
-Huallaga,San Martín,1.8,Bajo
-Amazonas,Loreto,2.0,Medio
-Urubamba,Cusco,1.4,Bajo
-Tumbes,Tumbes,3.0,Alto
-Chira,Piura,2.7,Medio
-Santa,Áncash,1.5,Bajo
+nombre_rio,region,nivel_metros,nivel_riesgo
+Rímac,Lima,2.6,Alto
+Chillón,Lima,1.3,Medio
+Lurín,Lima,0.9,Bajo
+Mantaro,Junín,3.2,Alto
+Ucayali,Ucayali,2.1,Medio
+Amazonas,Loreto,4.5,Alto
+Santa,Áncash,1.7,Bajo
+Tumbes,Tumbes,2.0,Medio
+Piura,Piura,2.3,Alto
+Vilcanota,Cusco,1.6,Bajo
