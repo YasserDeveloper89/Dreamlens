@@ -1,7 +1,6 @@
-region,fecha,nivel,nivel_num
-Lima,2025-05-01,VERDE,1
-Lima,2025-05-02,AMARILLO,2
-Lima,2025-05-03,ROJO,3
-Cusco,2025-05-01,AMARILLO,2
-Cusco,2025-05-02,VERDE,1
-Arequipa,2025-05-01,ROJO,3
+nombre,region,nivel,riesgo
+Río Amazonas,Loreto,12.4,ALTO
+Río Ucayali,Ucayali,7.9,MEDIO
+Río Marañón,Amazonas,10.2,ALTO
+Río Santa,Áncash,4.3,BAJO
+Río Rímac,Lima,5.1,MEDIO
