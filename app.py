@@ -1,96 +1,62 @@
-# Estructura de la app profesional
-# Proyecto: Sistema Integral de Monitoreo de Emergencias y Datos Regionales para Perú
-# Framework: Streamlit
-
 import streamlit as st
 import pandas as pd
 import plotly.express as px
+import datetime
 import requests
-from datetime import datetime
 from bs4 import BeautifulSoup
 
-# ----------- CONFIGURACIÓN INICIAL -----------
-st.set_page_config(layout="wide", page_title="HydroAlert Perú PRO")
-st.markdown("""
-    <style>
-    body { background-color: #f5f7fa; }
-    .block-container { padding-top: 1rem; }
-    </style>
-""", unsafe_allow_html=True)
+# Estilo moderno tipo Tesla/corporativo
+st.set_page_config(layout="wide", page_title="HydroAlert Perú", page_icon="🌊")
 
-st.title("HydroAlert Perú – Plataforma Nacional de Monitoreo en Tiempo Real")
+with open("style.css") as f:
+    st.markdown(f"<style>{f.read()}</style>", unsafe_allow_html=True)
 
-# ----------- SECCIÓN 1: MAPA DE EMERGENCIAS -----------
-st.subheader("1. Emergencias Naturales Activas (Perú)")
+st.markdown('''
+<div class='header'>
+    <h1>HydroAlert Perú</h1>
+    <p>Monitoreo inteligente de ríos, clima extremo y noticias peruanas en tiempo real.</p>
+</div>
+''', unsafe_allow_html=True)
 
-@st.cache_data
-def cargar_emergencias():
-    # Simulación: normalmente usarías una API oficial o scraping de INDECI
-    data = pd.DataFrame({
-        "Evento": ["Inundación", "Temblor", "Incendio forestal"],
-        "Región": ["Cusco", "Lima", "San Martín"],
-        "Lat": [-13.52, -12.05, -6.47],
-        "Lon": [-71.97, -77.04, -76.65],
-        "Severidad": ["Alta", "Media", "Alta"]
-    })
-    return data
+# Datos simulados
+datos = {
+    "Departamento": ["Lima", "Cusco", "Loreto", "Arequipa"],
+    "Lat": [-12.0464, -13.5319, -3.7491, -16.4090],
+    "Lon": [-77.0428, -71.9675, -73.2538, -71.5375],
+    "Nivel Río": [1.5, 2.1, 3.8, 1.2],
+    "Alerta": ["Verde", "Amarilla", "Roja", "Verde"]
+}
+df = pd.DataFrame(datos)
 
-emergencias = cargar_emergencias()
+st.subheader("Mapa de Monitoreo de Ríos")
 fig = px.scatter_mapbox(
-    emergencias,
-    lat="Lat", lon="Lon", hover_name="Evento", color="Severidad",
-    zoom=4, height=400, mapbox_style="carto-positron")
+    df, lat="Lat", lon="Lon", color="Alerta", size="Nivel Río",
+    hover_name="Departamento", zoom=4, height=500, mapbox_style="carto-positron"
+)
 st.plotly_chart(fig, use_container_width=True)
 
-# ----------- SECCIÓN 2: VIDEOS FUNCIONALES -----------
-st.subheader("2. Videos en Tiempo Real (INDECI, Noticias, Emergencias)")
+# Video
+st.subheader("Video informativo")
+st.video("https://www.youtube.com/watch?v=dViE9bd-7Xc")
 
-col1, col2 = st.columns(2)
-
-with col1:
-    st.video("https://www.youtube.com/watch?v=BKdA3fs9swo")  # verificado
-with col2:
-    st.video("https://www.youtube.com/watch?v=3p8z5IcdQxI")  # simulacro sismo
-
-# ----------- SECCIÓN 3: INDICADORES REGIONALES -----------
-st.subheader("3. Indicadores Regionales")
-
-@st.cache_data
-def cargar_indicadores():
-    # Simulación: usaría datos reales de INEI, OSCE, MEF, etc.
-    return pd.DataFrame({
-        "Región": ["Lima", "Cusco", "Loreto"],
-        "Pobreza (%)": [19.2, 25.4, 31.6],
-        "Acceso a agua (%)": [95, 87, 64],
-        "Cobertura Internet (%)": [89, 61, 45],
-    })
-
-df = cargar_indicadores()
-region = st.selectbox("Selecciona una región:", df["Región"])
-info = df[df["Región"] == region]
-st.dataframe(info)
-
-# ----------- SECCIÓN 4: NOTICIAS REALES DE INTERNET -----------
-st.subheader("4. Noticias en Tiempo Real sobre Clima y Desastres en Perú")
-
-@st.cache_data
-def extraer_noticias():
-    url = "https://rpp.pe/peru"
-    req = requests.get(url)
-    soup = BeautifulSoup(req.content, "html.parser")
-    noticias = soup.find_all("a", class_="story-title")
-    resultados = [n.text.strip() for n in noticias[:5]]
-    return resultados
-
+# Noticias reales
+st.subheader("Últimas noticias desde RPP.pe")
 try:
-    noticias = extraer_noticias()
+    url = 'https://rpp.pe/peru'
+    headers = {"User-Agent": "Mozilla/5.0"}
+    r = requests.get(url, headers=headers, timeout=10)
+    soup = BeautifulSoup(r.content, "html.parser")
+    noticias = soup.find_all("h3")[:5]
     for n in noticias:
-        st.markdown(f"- {n}")
+        st.markdown(f"<div class='news'>• {n.get_text(strip=True)}</div>", unsafe_allow_html=True)
 except:
-    st.error("Error al cargar noticias reales.")
+    st.warning("No se pudieron cargar noticias reales.")
 
-# ----------- FINAL -----------
-st.markdown("""
-#### Plataforma creada por OpenAI para mostrar capacidades de IA y conectividad de datos abiertos para Perú.
-""")
-                      
+# Tendencia de caudal
+st.subheader("Tendencia de caudal (simulado)")
+fecha = pd.date_range(end=datetime.datetime.today(), periods=30)
+caudal = pd.Series([round(1.5 + 0.3*i + (i%5)*0.5, 2) for i in range(30)])
+trend_df = pd.DataFrame({"Fecha": fecha, "Caudal (m³/s)": caudal})
+
+fig_linea = px.line(trend_df, x="Fecha", y="Caudal (m³/s)", title="Tendencia de caudal diario")
+st.plotly_chart(fig_linea, use_container_width=True)
