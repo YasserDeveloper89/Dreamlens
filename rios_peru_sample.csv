@@ -1,11 +1,8 @@
-rio,region,nivel,riesgo
-Rímac,Lima,2.5,Alto
-Chillón,Lima,1.3,Medio
-Lurín,Lima,0.9,Bajo
-Santa,Áncash,2.1,Medio
-Marañón,Amazonas,3.4,Alto
-Huallaga,San Martín,2.7,Alto
-Ucayali,Ucayali,1.8,Medio
-Tumbes,Tumbes,1.0,Bajo
-Jequetepeque,La Libertad,1.5,Medio
-Mantaro,Junín,2.0,Alto
+rio,region,nivel,riesgo,lat,lon
+Rímac,Lima,1.8,Medio,-12.0464,-77.0428
+Lurín,Lima,0.9,Bajo,-12.2464,-76.8728
+Chillón,Lima,2.3,Alto,-11.9364,-77.0628
+Mantaro,Junín,1.5,Medio,-11.9094,-75.2828
+Huallaga,San Martín,1.1,Bajo,-7.1531,-76.729
+Ucayali,Ucayali,2.0,Alto,-8.3792,-74.5539
+Amazonas,Loreto,1.2,Medio,-3.7491,-73.2538
