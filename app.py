@@ -32,7 +32,7 @@ st.markdown('''
 st.title("HydroAlert Perú – Monitoreo Inteligente")
 
 # Cargar datos simulados de ríos
-df = pd.read_csv("data/rios_peru_sample.csv")
+df = pd.read_csv("rios_peru_sample.csv")
 
 # Mostrar alerta basada en nivel
 nivel_actual = df['nivel'].iloc[-1]
