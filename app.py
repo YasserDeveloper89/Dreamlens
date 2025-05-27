@@ -1,75 +1,45 @@
-# HydroAlert Perú - Versión Premium PRO
+import streamlit as st import pandas as pd import plotly.express as px import requests from datetime import datetime
 
-import streamlit as st
-import pandas as pd
-import requests
-import plotly.express as px
-from datetime import datetime
-import plotly.graph_objects as go
+Título principal
 
-st.set_page_config(page_title="HydroAlert Perú", layout="wide")
+st.set_page_config(page_title="HydroAlert Perú PRO", layout="wide") st.markdown(""" <style> body { background-color: #f2f2f2; color: #1c1c1c; } .main-title { font-size: 3em; font-weight: bold; color: #0a3d62; } .section { padding: 1em; background-color: white; border-radius: 10px; box-shadow: 2px 2px 8px rgba(0, 0, 0, 0.1); margin-bottom: 1em; } </style> """, unsafe_allow_html=True)
 
-st.title("HydroAlert Perú - Monitoreo Inteligente")
-st.markdown("""
-Esta aplicación muestra datos hidrológicos y meteorológicos en tiempo real.
-Provee visualizaciones interactivas para facilitar la interpretación de los datos.
-""")
+st.markdown("<div class='main-title'>HydroAlert Perú – Monitoreo Inteligente</div>", unsafe_allow_html=True)
 
-# Cargar CSV
-try:
-    df = pd.read_csv("rios_peru_sample.csv")
-    columnas_esperadas = {'nombre', 'nivel', 'riesgo', 'region'}
-    if not columnas_esperadas.issubset(df.columns):
-        raise ValueError("El archivo CSV no contiene las columnas necesarias: 'nombre', 'nivel', 'riesgo', 'region'")
-except Exception as e:
-    st.error(f"Error al cargar CSV: {e}")
-    st.stop()
+Leer CSV sin carpeta 'data/'
 
-# Selector interactivo de río
-rio_seleccionado = st.selectbox("Selecciona un río para ver su estado:", df['nombre'].unique())
-rio_datos = df[df['nombre'] == rio_seleccionado].iloc[0]
+try: df = pd.read_csv("rios_peru_sample.csv") if 'region' not in df.columns: st.error("El archivo CSV no contiene la columna 'region'. Por favor revisa el archivo.") else: regiones = df['region'].unique().tolist() region_seleccionada = st.selectbox("Selecciona una región para ver los datos hidrológicos:", regiones)
 
-# Mostrar información del río
-st.subheader(f"Estado actual del Río {rio_seleccionado}")
-st.markdown(f"**Nivel:** {rio_datos['nivel']} cm")
-st.markdown(f"**Nivel de Riesgo:** {rio_datos['riesgo']}")
+df_region = df[df['region'] == region_seleccionada]
 
-# Color según riesgo
-colores_riesgo = {"BAJO": "green", "MODERADO": "orange", "ALTO": "red"}
-color = colores_riesgo.get(rio_datos['riesgo'].upper(), "gray")
-st.markdown(f"<div style='background-color:{color}; padding:10px; color:white;'>RIESGO: {rio_datos['riesgo']}</div>", unsafe_allow_html=True)
+    st.subheader(f"Nivel actual de ríos en {region_seleccionada}")
+    fig = px.bar(df_region, x='rio', y='nivel', color='riesgo',
+                 color_discrete_map={
+                     'Bajo': 'green',
+                     'Medio': 'orange',
+                     'Alto': 'red'
+                 },
+                 labels={'nivel': 'Nivel del río (m)'})
+    st.plotly_chart(fig)
 
-# Gráfico de barras
-st.subheader("Comparativa de Niveles de Ríos")
-fig = px.bar(df, x='nombre', y='nivel', color='riesgo', title='Niveles actuales por río')
-st.plotly_chart(fig, use_container_width=True)
+    riesgo_predominante = df_region['riesgo'].mode()[0] if not df_region['riesgo'].mode().empty else "Desconocido"
+    st.info(f"Nivel de riesgo predominante: {riesgo_predominante}")
 
-# Pronóstico del tiempo
-st.subheader("Pronóstico del Clima en Lima")
-try:
-    weather = requests.get("https://wttr.in/Lima?format=3").text
-    st.text(weather)
-except:
-    st.warning("No se pudo obtener el clima actual.")
+except FileNotFoundError: st.error("No se encontró el archivo rios_peru_sample.csv. Asegúrate de que esté en el mismo directorio que este script.")
 
-# Noticias
-st.subheader("Noticias Recientes sobre Recursos Hídricos")
-noticias = [
-    {"titulo": "Senamhi alerta de posibles desbordes en la selva", "link": "https://www.senamhi.gob.pe"},
-    {"titulo": "Proyectos de prevención ante lluvias intensas en Perú", "link": "https://elcomercio.pe"},
-]
-for noticia in noticias:
-    st.markdown(f"- [{noticia['titulo']}]({noticia['link']})")
+Clima actual para Lima
 
-# Videos informativos
-st.subheader("Videos Informativos")
-videos = [
-    "https://www.youtube.com/embed/zqsIIcbqomQ",  # verificado como funcional
-    "https://www.youtube.com/embed/2aHDuEaErE0",
-    "https://www.youtube.com/embed/NalRIRJz4Hk"
-]
+st.subheader("Clima Actual en Lima") API_KEY = "TU_API_KEY_AQUI"  # Reemplaza por tu clave de OpenWeather url = f"https://api.openweathermap.org/data/2.5/weather?q=Lima,pe&units=metric&appid={API_KEY}" try: response = requests.get(url).json() temp = response['main']['temp'] desc = response['weather'][0]['description'] st.success(f"Temperatura: {temp}°C - Condición: {desc.capitalize()}") except: st.error("No se pudo obtener la información del clima.")
 
-for url in videos:
-    st.video(url)
+Videos informativos
 
-st.success("Aplicación cargada correctamente. Datos actualizados.")
+st.subheader("Videos Educativos sobre Seguridad Hídrica") video_urls = [ "https://youtu.be/zqsIIcbqomQ", "https://youtu.be/1t0KsbZzO9Q", "https://youtu.be/WZhxZcgIt2U", "https://youtu.be/B0gXgLke1nk", "https://youtu.be/Kb1ZKCPzTe8" ] for url in video_urls: st.video(url)
+
+Noticias
+
+st.subheader("Últimas Noticias Hidrológicas en Perú") noticias = [ ("Prevención de desbordes en el río Rímac avanza con nuevas obras", "https://www.andina.pe/agencia/noticia-prevencion-desbordes-rio-rimac-avanza-nuevas-obras-894587.aspx"), ("Senamhi advierte posibles lluvias en zonas altas de la selva", "https://rpp.pe/peru/actualidad/senamhi-advierte-posibles-lluvias-en-la-selva-noticia-1322103") ] for titulo, enlace in noticias: st.markdown(f"- {titulo}")
+
+Información histórica y pronóstico
+
+st.subheader("Explora Datos Históricos") fecha_inicio = st.date_input("Desde:", datetime(2023, 1, 1)) fecha_fin = st.date_input("Hasta:", datetime(2023, 12, 31)) if fecha_inicio > fecha_fin: st.warning("La fecha de inicio no puede ser posterior a la fecha de fin.") else: st.success("Fechas seleccionadas correctamente. En el futuro puedes vincular esta selección a gráficos históricos si los tienes disponibles.")
+
