@@ -1,4 +1,4 @@
-nombre_rio,region,nivel_metros,nivel_riesgo
+rio,region,nivel,riesgo
 Rímac,Lima,2.6,Alto
 Chillón,Lima,1.3,Medio
 Lurín,Lima,0.9,Bajo
