@@ -1,44 +1,45 @@
 import streamlit as st
 from openai import OpenAI
 
-# Clave desde Streamlit Secrets
+# Obtener clave desde Streamlit Secrets
 api_key = st.secrets["OPENAI_API_KEY"]
 client = OpenAI(api_key=api_key)
 
-# Configuración inicial
-st.set_page_config(page_title="DreamLens", layout="centered", page_icon="💤")
-st.title("🌙 DreamLens App")
-st.subheader("Cuenta tu sueño y visualiza lo que tu mente imaginó mientras dormías!")
+# Configuración de la página (sin emojis para evitar errores Unicode)
+st.set_page_config(page_title="DreamLens", layout="centered")
+st.title("DreamLens")
+st.subheader("Cuenta tu sueño y visualiza lo que tu mente imaginó mientras dormías")
 
+# Explicación
 with st.expander("¿Cómo funciona?"):
     st.markdown("""
-    1. Escribe tu sueño con tantos detalles como puedas.
+    1. Escribe tu sueño con muchos detalles.
     2. DreamLens lo interpreta simbólicamente.
-    3. Se genera una mini historia literaria.
-    4. Se crea una imagen visual onírica basada en lo que contaste.
+    3. Se genera una pequeña historia inspirada en tu sueño.
+    4. Se crea una imagen visual basada en lo que soñaste.
     """)
 
-# Entrada del usuario
+# Entrada del sueño
 dream_input = st.text_area(
     "¿Qué soñaste anoche?",
     height=250,
-    placeholder="Ej: Estaba en un bosque donde los árboles hablaban..."
+    placeholder="Ejemplo: Soñé con un cielo oscuro y un perro verde que hablaba..."
 )
 
-# Botón principal
+# Botón de acción
 if st.button("Interpretar y Visualizar"):
     if not dream_input.strip():
         st.warning("Por favor, escribe tu sueño.")
     else:
-        with st.spinner("Analizando tu mundo onírico..."):
+        with st.spinner("Analizando tu sueño..."):
 
-            # Interpretación simbólica
+            # Interpretación del sueño
             interp_prompt = f"""
-Actúa como un analista de sueños profesional con enfoque junguiano.
-Interpreta este sueño simbólicamente y explica qué podría significar:
+Actúa como un analista de sueños profesional. Interpreta simbólicamente el siguiente sueño:
 
-Sueño: {dream_input}
-"""
+{dream_input}
+""".encode('utf-8').decode('utf-8')
+
             interp_response = client.chat.completions.create(
                 model="gpt-4",
                 messages=[{"role": "user", "content": interp_prompt}],
@@ -46,12 +47,13 @@ Sueño: {dream_input}
             )
             interpretation = interp_response.choices[0].message.content
 
-            # Historia onírica
+            # Historia inspirada en el sueño
             story_prompt = f"""
-Convierte este sueño en una breve historia literaria onírica y poética (máximo 3 párrafos):
+Convierte este sueño en una breve historia literaria (máximo 3 párrafos):
 
 {dream_input}
-"""
+""".encode('utf-8').decode('utf-8')
+
             story_response = client.chat.completions.create(
                 model="gpt-4",
                 messages=[{"role": "user", "content": story_prompt}],
@@ -59,8 +61,8 @@ Convierte este sueño en una breve historia literaria onírica y poética (máxi
             )
             story = story_response.choices[0].message.content
 
-            # Imagen generada
-            image_prompt = f"Una escena realista y onírica basada en este sueño: {dream_input}"
+            # Generación de imagen
+            image_prompt = f"Una escena realista basada en este sueño: {dream_input}"
             image_response = client.images.generate(
                 prompt=image_prompt,
                 n=1,
@@ -68,16 +70,16 @@ Convierte este sueño en una breve historia literaria onírica y poética (máxi
             )
             image_url = image_response.data[0].url
 
-        # Mostrar resultados
-        st.success("¡Sueño interpretado!")
+        # Resultados
+        st.success("¡Sueño procesado con éxito!")
         st.markdown("### Interpretación simbólica:")
         st.markdown(interpretation)
 
-        st.markdown("### Historia onírica:")
+        st.markdown("### Historia basada en tu sueño:")
         st.markdown(story)
 
-        st.markdown("### Visualización del sueño:")
-        st.image(image_url, caption="Representación visual de tu sueño", use_column_width=True)
+        st.markdown("### Imagen generada:")
+        st.image(image_url, caption="Visualización del sueño", use_column_width=True)
 
         st.markdown("---")
-        st.markdown("¿Quieres volver a soñar?")
+        st.markdown("¿Quieres analizar otro sueño?")
