@@ -1,6 +1,9 @@
-nombre,region,nivel,riesgo
-Río Amazonas,Loreto,12.4,ALTO
-Río Ucayali,Ucayali,7.9,MEDIO
-Río Marañón,Amazonas,10.2,ALTO
-Río Santa,Áncash,4.3,BAJO
-Río Rímac,Lima,5.1,MEDIO
+nombre,region,nivel,umbral_bajo,umbral_medio,umbral_alto
+Rímac,Lima,2.3,1.0,2.0,3.0
+Amazonas,Loreto,4.5,2.5,4.0,5.5
+Ucayali,Pucallpa,3.2,1.5,3.0,4.5
+Mantaro,Junín,1.8,1.0,2.0,3.0
+Tumbes,Tumbes,0.9,0.5,1.5,2.5
+Chira,Piura,2.1,1.0,2.0,3.5
+Santa,Áncash,2.8,1.5,2.5,4.0
+Vilcanota,Cusco,1.4,1.0,2.0,3.0
