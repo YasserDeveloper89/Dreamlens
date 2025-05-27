@@ -1,9 +1,10 @@
-nombre,region,nivel,umbral_bajo,umbral_medio,umbral_alto
-Rímac,Lima,2.3,1.0,2.0,3.0
-Amazonas,Loreto,4.5,2.5,4.0,5.5
-Ucayali,Pucallpa,3.2,1.5,3.0,4.5
-Mantaro,Junín,1.8,1.0,2.0,3.0
-Tumbes,Tumbes,0.9,0.5,1.5,2.5
-Chira,Piura,2.1,1.0,2.0,3.5
-Santa,Áncash,2.8,1.5,2.5,4.0
-Vilcanota,Cusco,1.4,1.0,2.0,3.0
+rio,region,nivel,riesgo
+Rímac,Lima,3.2,Alto
+Mantaro,Junín,2.5,Medio
+Huallaga,San Martín,1.8,Bajo
+Amazonas,Loreto,2.0,Medio
+Urubamba,Cusco,1.4,Bajo
+Tumbes,Tumbes,3.0,Alto
+Chira,Piura,2.7,Medio
+Santa,Áncash,1.5,Bajo
+``
