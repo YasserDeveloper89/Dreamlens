@@ -1,8 +1,5 @@
 streamlit
 pandas
 plotly
-snscrape
-matplotlib
-wordcloud
-Pillow
 requests
+feedparser
