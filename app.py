@@ -2,77 +2,92 @@ import streamlit as st
 import pandas as pd
 import plotly.express as px
 import requests
-import datetime
 
-st.set_page_config(layout="wide", page_title="HydroAlert Perú")
-st.title("HydroAlert Perú – Monitoreo Inteligente de Ríos y Clima")
+st.set_page_config(layout="wide", page_title="HydroAlert Perú – PRO")
 
-# Cargar datos CSV
+st.markdown(
+    """
+    <style>
+    body { background-color: #f4f6f9; }
+    .main { background-color: #ffffff; padding: 1.5em; border-radius: 10px; }
+    h1, h2, h3, h4 { color: #003366; }
+    .stButton>button { background-color: #003366; color: white; font-weight: bold; }
+    .stVideo { border: 1px solid #ddd; border-radius: 10px; }
+    </style>
+    """, unsafe_allow_html=True
+)
+
+st.title("HydroAlert Perú – Monitoreo Inteligente")
+
+# Cargar CSV en el mismo directorio
 try:
     df = pd.read_csv("rios_peru_sample.csv")
 except FileNotFoundError:
-    st.error("No se encontró el archivo de datos CSV. Asegúrate de colocarlo en el mismo directorio.")
+    st.error("Archivo CSV no encontrado. Asegúrate de tener 'rios_peru_sample.csv' en el mismo directorio.")
+    st.stop()
 
-# Función para mostrar el estado por río
-if 'region' in df.columns and 'caudal' in df.columns:
-    regiones = df['region'].unique()
-    region_seleccionada = st.selectbox("Selecciona una región para visualizar su caudal:", regiones)
-    df_filtrado = df[df['region'] == region_seleccionada]
-    fig = px.line(df_filtrado, x='fecha', y='caudal', title=f"Caudal del río en {region_seleccionada}")
-    st.plotly_chart(fig, use_container_width=True)
+if "region" not in df.columns or "nivel" not in df.columns:
+    st.error("El archivo CSV debe tener las columnas 'region' y 'nivel'.")
+    st.stop()
 
-# Pronóstico del tiempo actual desde Open-Meteo
-st.subheader("Pronóstico del Tiempo (Lima)")
-params = {
-    "latitude": -12.0464,
-    "longitude": -77.0428,
-    "daily": "temperature_2m_max,temperature_2m_min,precipitation_sum",
-    "timezone": "auto"
-}
-response = requests.get("https://api.open-meteo.com/v1/forecast", params=params)
-if response.status_code == 200:
-    data = response.json()
-    dias = data['daily']['time']
-    temp_max = data['daily']['temperature_2m_max']
-    temp_min = data['daily']['temperature_2m_min']
-    lluvia = data['daily']['precipitation_sum']
-    df_clima = pd.DataFrame({
-        "Fecha": dias,
-        "Temp Max (°C)": temp_max,
-        "Temp Min (°C)": temp_min,
-        "Lluvia (mm)": lluvia
-    })
-    st.dataframe(df_clima)
+# Selector de región
+region = st.selectbox("Selecciona una región:", sorted(df["region"].unique()))
+datos_region = df[df["region"] == region]
+
+# Nivel de riesgo
+if not datos_region.empty:
+    nivel = datos_region["nivel"].values[0]
 else:
-    st.error("No se pudo obtener el pronóstico del clima.")
+    nivel = "Desconocido"
 
-# Indicador de riesgo simplificado
-st.subheader("Estado General de Riesgo")
-riesgo_actual = df['estado'].value_counts().idxmax() if 'estado' in df.columns else "Desconocido"
-st.markdown(f"**Nivel de riesgo predominante:** `{riesgo_actual}`")
-if riesgo_actual == "Rojo":
-    st.error("¡Alerta crítica! Evitar zonas cercanas a los ríos.")
-elif riesgo_actual == "Amarillo":
-    st.warning("Precaución, caudales en ascenso.")
-else:
-    st.success("Sin peligro inminente.")
+color_nivel = {
+    "VERDE": "green",
+    "AMARILLO": "orange",
+    "ROJO": "red"
+}.get(nivel.upper(), "gray")
 
-# Noticias reales (placeholder con enlace a RPP)
-st.subheader("Noticias Hidrometeorológicas del Perú")
-noticias = {
-    "Lluvias intensas afectan diversas regiones del Perú": "https://rpp.pe/peru/actualidad",
-    "Advertencia del SENAMHI por desborde en río Marañón": "https://www.senamhi.gob.pe",
-}
-for titulo, enlace in noticias.items():
-    st.markdown(f"- [{titulo}]({enlace})")
+st.markdown(f"### Nivel de riesgo predominante: <span style='color:{color_nivel}'>{nivel.upper()}</span>", unsafe_allow_html=True)
 
-# Ranking de regiones
-if 'caudal' in df.columns and 'region' in df.columns:
-    st.subheader("Ranking de Regiones con Mayor Caudal")
-    ranking = df.groupby("region")["caudal"].mean().sort_values(ascending=False).reset_index()
-    ranking.columns = ["Región", "Caudal Promedio (m³/s)"]
-    st.dataframe(ranking)
+# Gráfico de niveles de río por región
+fig = px.bar(datos_region, x="fecha", y="nivel_num", title=f"Niveles del río - {region}", color="nivel", height=400)
+st.plotly_chart(fig, use_container_width=True)
 
-# Video informativo
-st.subheader("Video Informativo")
-st.video("https://youtu.be/zqsIIcbqomQ?si=wXxAZxSaeGNNK8YZ")
+# Clima actual (ejemplo con Open-Meteo API)
+with st.spinner("Obteniendo datos meteorológicos..."):
+    weather_url = "https://api.open-meteo.com/v1/forecast?latitude=-12.0464&longitude=-77.0428&current=temperature_2m&timezone=auto"
+    res = requests.get(weather_url).json()
+    temp = res.get("current", {}).get("temperature_2m", None)
+    if temp:
+        st.metric("Temperatura actual en Lima", f"{temp}°C")
+    else:
+        st.warning("No se pudo obtener el clima actual.")
+
+# Noticias (simuladas pero puedes conectarlo a RSS o News API)
+st.subheader("Noticias recientes sobre ríos y clima en Perú")
+news = [
+    {"titulo": "Crecida del río Rímac activa alertas en Lima", "url": "https://andina.pe/agencia/noticia-crecida-del-rio-rimac-activan-alertas-957462.aspx"},
+    {"titulo": "INDECI recomienda estar alerta por lluvias intensas", "url": "https://www.indeci.gob.pe/"},
+    {"titulo": "SENAMHI emite advertencia hidrológica en la selva", "url": "https://www.senamhi.gob.pe/"}
+]
+
+for item in news:
+    st.markdown(f"- [{item['titulo']}]({item['url']})")
+
+# Videos educativos embebidos
+st.subheader("Videos informativos sobre prevención y monitoreo")
+
+video_urls = [
+    "https://www.youtube.com/embed/Afv7X-XGxS8",
+    "https://www.youtube.com/embed/WoHgXguC8KI",
+    "https://www.youtube.com/embed/Xcb4w5xu6Rg",
+    "https://www.youtube.com/embed/zqsIIcbqomQ",
+    "https://www.youtube.com/embed/EpjmYy9K3XU",
+    "https://www.youtube.com/embed/UjQPT7iHuUs"
+]
+
+cols = st.columns(2)
+for i, url in enumerate(video_urls):
+    with cols[i % 2]:
+        st.video(url)
+
+st.info("Fuente de datos: SENAMHI, INDECI, Open-Meteo – Información actualizada automáticamente.")
