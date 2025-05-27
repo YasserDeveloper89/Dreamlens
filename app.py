@@ -1,74 +1,102 @@
 import streamlit as st
 import pandas as pd
 import plotly.express as px
+import datetime
 import requests
-from datetime import datetime
 
 st.set_page_config(page_title="HydroAlert Perú", layout="wide")
 
-st.markdown("<h1 style='color:#0A5D5E'>HydroAlert Perú – Monitoreo Inteligente</h1>", unsafe_allow_html=True)
+st.markdown("""
+    <style>
+        .main {
+            background-color: #f4f6f9;
+        }
+        .title {
+            color: #111;
+            font-size: 32px;
+            font-weight: bold;
+        }
+        .section {
+            padding: 20px;
+            background-color: white;
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+        .alerta {
+            padding: 10px;
+            border-radius: 5px;
+            font-weight: bold;
+        }
+    </style>
+""", unsafe_allow_html=True)
 
-# Cargar datos hidrológicos desde el mismo directorio
+st.markdown('<div class="title">HydroAlert Perú – Monitoreo Inteligente</div>', unsafe_allow_html=True)
+
+# Leer CSV directamente del directorio
 @st.cache_data
-def obtener_datos_hidrologicos():
+def cargar_datos():
     return pd.read_csv("rios_peru_sample.csv")
 
-df = obtener_datos_hidrologicos()
+df = cargar_datos()
 
-# Selección por río y región
-region = st.selectbox("Selecciona una región:", sorted(df["region"].unique()))
-ríos = df[df["region"] == region]["rio"].unique()
-río = st.selectbox("Selecciona un río:", sorted(ríos))
+# Validar columnas y limpieza básica
+if 'region' not in df.columns:
+    st.error("El archivo CSV no contiene la columna 'region'. Por favor revisa el archivo.")
+    st.stop()
 
-datos_río = df[(df["region"] == region) & (df["rio"] == río)]
+# Selección de región
+region = st.selectbox("Selecciona una región para ver los datos hidrológicos:", df['region'].unique())
 
-st.subheader(f"Estado actual del río {río}")
-estado = datos_río["estado"].values[0]
-color_estado = {"VERDE": "green", "AMARILLO": "orange", "ROJO": "red"}
-st.markdown(f"<h3 style='color:{color_estado.get(estado, 'gray')}'>Estado: {estado}</h3>", unsafe_allow_html=True)
+datos_region = df[df['region'] == region]
 
-# Gráfico interactivo de caudal
-fig = px.line(datos_río, x="fecha", y="nivel_caudal", title=f"Nivel de caudal del río {río} (histórico)")
-st.plotly_chart(fig, use_container_width=True)
+if not datos_region.empty:
+    st.markdown(f"### Datos para la región: {region}")
+    fig = px.line(datos_region, x='fecha', y='caudal', title=f'Caudal del río en {region}')
+    st.plotly_chart(fig, use_container_width=True)
 
-# Clima actual por ciudad
-st.subheader("Clima actual en Perú")
-ciudades = ["Lima", "Cusco", "Arequipa", "Piura"]
-ciudad = st.selectbox("Selecciona una ciudad:", ciudades)
+    caudal_actual = datos_region.iloc[-1]['caudal']
+    estado = "VERDE" if caudal_actual < 20 else "AMARILLO" if caudal_actual < 40 else "ROJO"
+    color_estado = {"VERDE": "#4CAF50", "AMARILLO": "#FFC107", "ROJO": "#F44336"}
 
-def obtener_clima(ciudad):
-    api_key = "6cbcbfddda724bcdbd114711241305"  # demo key de WeatherAPI
-    url = f"http://api.weatherapi.com/v1/current.json?key={api_key}&q={ciudad}&lang=es"
-    respuesta = requests.get(url)
-    if respuesta.status_code == 200:
-        data = respuesta.json()
-        return {
-            "temp_c": data["current"]["temp_c"],
-            "condition": data["current"]["condition"]["text"],
-            "icon": "https:" + data["current"]["condition"]["icon"]
-        }
-    return None
+    st.markdown(f"<div class='alerta' style='background-color: {color_estado[estado]};'>Estado actual del río: {estado}</div>", unsafe_allow_html=True)
+else:
+    st.warning("No hay datos para esta región.")
 
-clima = obtener_clima(ciudad)
-if clima:
-    st.markdown(f"**{ciudad}**: {clima['temp_c']}°C – {clima['condition']}")
-    st.image(clima["icon"], width=50)
+# Pronóstico del clima en Lima (Open-Meteo)
+st.markdown("### Pronóstico del clima (Lima, Perú)")
+try:
+    clima = requests.get(
+        "https://api.open-meteo.com/v1/forecast?latitude=-12.05&longitude=-77.05&hourly=temperature_2m,precipitation_probability&timezone=auto"
+    ).json()
+    temp = clima["hourly"]["temperature_2m"][0]
+    lluvia = clima["hourly"]["precipitation_probability"][0]
 
-# Noticias reales (con enlaces)
-st.subheader("Noticias recientes sobre hidrología y clima en Perú")
-noticias = [
-    {
-        "titulo": "SENAMHI alerta aumento de caudales en la región Loreto",
-        "url": "https://www.senamhi.gob.pe/?p=avisos"
-    },
-    {
-        "titulo": "Estudio revela cambios drásticos en el caudal del río Rímac",
-        "url": "https://andina.pe/agencia/noticia-senamhi-rio-rimac"
-    }
-]
-for noticia in noticias:
-    st.markdown(f"- [{noticia['titulo']}]({noticia['url']})")
+    st.metric("Temperatura actual", f"{temp} °C")
+    st.metric("Probabilidad de lluvia", f"{lluvia}%")
+except Exception as e:
+    st.error("Error al obtener el pronóstico del clima.")
 
-# Video informativo funcional
-st.subheader("Video informativo sobre riesgo hídrico")
-st.video("https://youtu.be/zqsIIcbqomQ?si=wXxAZxSaeGNNK8YZ")
+# Embed de video funcional
+st.markdown("### Video informativo")
+st.video("https://youtu.be/zqsIIcbqomQ")
+
+# Noticias desde Google News RSS
+st.markdown("### Noticias recientes sobre agua y clima en Perú")
+
+def obtener_noticias():
+    try:
+        import feedparser
+        feed = feedparser.parse("https://news.google.com/rss/search?q=agua+clima+Perú")
+        noticias = []
+        for entry in feed.entries[:5]:
+            noticias.append((entry.title, entry.link))
+        return noticias
+    except:
+        return []
+
+noticias = obtener_noticias()
+if noticias:
+    for titulo, enlace in noticias:
+        st.markdown(f"- [{titulo}]({enlace})")
+else:
+    st.write("No se pudieron obtener noticias.")
