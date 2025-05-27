@@ -1,85 +1,87 @@
-import streamlit as st
-import pandas as pd
-import plotly.express as px
-from datetime import datetime
-import requests
+app.py
 
-st.set_page_config(page_title="HydroAlert Perú – Versión PRO", layout="wide")
+import streamlit as st import pandas as pd import plotly.express as px import requests from datetime import datetime import folium from streamlit_folium import folium_static
 
-# Estilos
-st.markdown("""
-    <style>
-    body { background-color: #f2f4f8; }
-    .big-font { font-size:24px !important; }
-    .video-container { display: flex; gap: 20px; flex-wrap: wrap; }
-    iframe { border-radius: 10px; }
-    .alert-box { border-radius: 10px; padding: 20px; margin-bottom: 20px; }
-    </style>
-""", unsafe_allow_html=True)
+st.set_page_config(page_title="HydroAlert Perú Premium PRO", layout="wide") st.title("HydroAlert Perú – Monitoreo Inteligente")
 
-st.title("HydroAlert Perú – Monitoreo Inteligente de Ríos y Clima")
+Cargar datos de ríos
 
-# Cargar datos de ríos
-try:
-    df = pd.read_csv("rios_peru_sample.csv")
-    required_cols = {'rio', 'region', 'nivel', 'riesgo'}
-    if not required_cols.issubset(set(df.columns)):
-        st.error("El archivo CSV debe contener las columnas: rio, region, nivel, riesgo.")
-    else:
-        rios = df["rio"].unique().tolist()
-        rio_seleccionado = st.selectbox("Selecciona un río", rios)
+def cargar_datos(): try: df = pd.read_csv("rios_peru.csv") columnas_necesarias = {"rio", "region", "nivel", "riesgo", "lat", "lon"} if not columnas_necesarias.issubset(set(df.columns)): st.error("El archivo CSV debe contener las columnas: rio, region, nivel, riesgo, lat, lon") return None return df except FileNotFoundError: st.error("Archivo rios_peru.csv no encontrado") return None
 
-        datos_rio = df[df["rio"] == rio_seleccionado]
-        nivel = datos_rio["nivel"].values[0]
-        riesgo = datos_rio["riesgo"].values[0]
-        region = datos_rio["region"].values[0]
+df = cargar_datos()
 
-        # Colores de riesgo
-        color_dict = {
-            "Alto": "red",
-            "Medio": "orange",
-            "Bajo": "green"
-        }
-        color_riesgo = color_dict.get(riesgo, "gray")
+if df is not None: regiones = df['region'].unique().tolist() region_seleccionada = st.selectbox("Selecciona la región:", regiones) df_region = df[df['region'] == region_seleccionada]
 
-        st.markdown(f"""
-            <div class="alert-box" style="background-color: {color_riesgo}; color: white;">
-                <strong>{rio_seleccionado}</strong> ({region})<br>
-                Nivel Actual: <strong>{nivel}</strong><br>
-                Nivel de Riesgo: <strong>{riesgo}</strong>
-            </div>
-        """, unsafe_allow_html=True)
+rio_seleccionado = st.selectbox("Selecciona el río:", df_region['rio'].unique())
+datos_rio = df_region[df_region['rio'] == rio_seleccionado].iloc[0]
 
-        # Gráfico
-        fig = px.bar(df, x='rio', y='nivel', color='riesgo', title="Comparación de niveles de los ríos")
-        st.plotly_chart(fig, use_container_width=True)
+st.subheader(f"Estado actual del Río {rio_seleccionado} - {region_seleccionada}")
+nivel = datos_rio['nivel']
+riesgo = datos_rio['riesgo']
 
-except FileNotFoundError:
-    st.error("Archivo CSV no encontrado. Asegúrate de colocar 'rios_peru_sample.csv' en el mismo directorio.")
+color = "green" if riesgo == "Bajo" else "orange" if riesgo == "Medio" else "red"
+st.markdown(f"<div style='background-color:{color}; padding:10px; border-radius:8px'>"
+            f"<h4 style='color:white;'>Nivel: {nivel} m / Riesgo: {riesgo}</h4></div>", unsafe_allow_html=True)
 
-# Clima actual - Desactivado hasta ingresar API
-st.subheader("Clima actual en Lima (modo demostración)")
-st.info("Para activar el pronóstico real, agrega tu API key de OpenWeatherMap.")
+# Gráfico comparativo de niveles
+fig = px.bar(df_region, x='rio', y='nivel', color='riesgo',
+             color_discrete_map={'Bajo': 'green', 'Medio': 'orange', 'Alto': 'red'},
+             title="Comparación de niveles de ríos en la región")
+st.plotly_chart(fig, use_container_width=True)
 
-# Noticias
-st.subheader("Noticias recientes")
-st.markdown("- [Lluvias intensas provocan desbordes en zonas del norte de Perú](https://elcomercio.pe)")
-st.markdown("- [SENAMHI advierte incremento del caudal en ríos amazónicos](https://andina.pe)")
-st.markdown("- [Plan de emergencia hídrica anunciado por el gobierno](https://gestion.pe)")
+# Mapa interactivo con predicción simple
+st.subheader("Mapa de estaciones y predicción")
+mapa = folium.Map(location=[-9.19, -75.02], zoom_start=6)
 
-# Videos informativos
+for i, row in df.iterrows():
+    riesgo_color = 'green' if row['riesgo'] == 'Bajo' else 'orange' if row['riesgo'] == 'Medio' else 'red'
+    folium.CircleMarker(
+        location=[row['lat'], row['lon']],
+        radius=8,
+        color=riesgo_color,
+        fill=True,
+        popup=f"{row['rio']} - Riesgo: {row['riesgo']}"
+    ).add_to(mapa)
+
+folium_static(mapa)
+
+# Videos de YouTube funcionales
 st.subheader("Videos informativos")
-st.markdown('<div class="video-container">', unsafe_allow_html=True)
-st.video("https://youtu.be/zqsIIcbqomQ?si=wXxAZxSaeGNNK8YZ")
-st.video("https://youtu.be/BO-OepQkvEM?si=Roq8KAW5C-5G58AH")
-st.video("https://youtu.be/5vm9PUMeJVo?si=dNrwoqcgVgFEtJmy")
-st.markdown('</div>', unsafe_allow_html=True)
+videos = [
+    "https://www.youtube.com/embed/zqsIIcbqomQ",
+    "https://www.youtube.com/embed/xoUhNu0Jn94",
+    "https://www.youtube.com/embed/BO-OepQkvEM",
+    "https://www.youtube.com/embed/5vm9PUMeJVo",
+    "https://www.youtube.com/embed/QfTx3jUtaVQ"
+]
+for v in videos:
+    st.video(v)
 
-# Sugerencia de funciones futuras
-st.markdown("### Próximas funciones Pro:")
-st.markdown("""
-- Alertas por WhatsApp cuando un río supere niveles críticos.
-- Mapa en tiempo real de estaciones meteorológicas.
-- Historial interactivo de caudales.
-- Detector de anomalías climáticas con IA.
-""")
+# Noticias diarias (placeholder real)
+st.subheader("Noticias relevantes")
+noticias = [
+    ("SENAMHI alerta lluvias en la sierra sur", "https://www.senamhi.gob.pe/"),
+    ("Previsión hidrológica actualizada para la costa", "https://www.senamhi.gob.pe/?p=boletin-hidrologico")
+]
+for titulo, enlace in noticias:
+    st.markdown(f"- [{titulo}]({enlace})")
+
+# Pronóstico del clima actual en Lima
+st.subheader("Clima actual en Lima")
+clima = requests.get("https://api.open-meteo.com/v1/forecast?latitude=-12.04&longitude=-77.03&current_weather=true")
+if clima.ok:
+    data_clima = clima.json()["current_weather"]
+    st.write(f"Temperatura: {data_clima['temperature']} °C")
+    st.write(f"Viento: {data_clima['windspeed']} km/h")
+    st.write(f"Estado: {data_clima['weathercode']}")
+else:
+    st.warning("No se pudo obtener el clima actual.")
+
+# Historial (simulado, se puede conectar a base de datos futura)
+st.subheader("Historial del Río (simulado)")
+historial = pd.DataFrame({
+    "fecha": pd.date_range(end=datetime.today(), periods=7),
+    "nivel": [nivel - 0.2, nivel - 0.1, nivel, nivel + 0.1, nivel - 0.3, nivel, nivel + 0.2]
+})
+st.line_chart(historial.set_index("fecha"))
+
