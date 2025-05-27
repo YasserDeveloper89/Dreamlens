@@ -2,7 +2,15 @@ PROYECTO SOMBRA – Versión Profesional (sin APIs externas)
 
 Simulador de Narrativas Sociales en Perú con Tendencias Reales y Datos Públicos
 
-import streamlit as st import pandas as pd import plotly.express as px import requests from datetime import datetime, timedelta import random
+# PROYECTO SOMBRA - Versión Profesional (sin APIs externas)
+# Simulador de Narrativas Sociales en Perú con Tendencias Reales y Datos Públicos
+
+import streamlit as st
+import pandas as pd
+import plotly.express as px
+import requests
+from datetime import datetime, timedelta
+import random
 
 st.set_page_config(page_title="PROYECTO SOMBRA", layout="wide") st.title("PROYECTO SOMBRA") st.markdown("Simulador premium de narrativa, tensiones sociales y manipulación informativa en el Perú")
 
