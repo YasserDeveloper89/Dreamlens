@@ -1,26 +1,31 @@
 import streamlit as st
-import os
 from openai import OpenAI
-from dotenv import load_dotenv
 
-# Cargar la clave de API desde .env
-load_dotenv()
-client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+# Clave desde Streamlit Secrets
+api_key = st.secrets["OPENAI_API_KEY"]
+client = OpenAI(api_key=api_key)
 
+# Configuración inicial
 st.set_page_config(page_title="DreamLens", layout="centered", page_icon="💤")
-st.title("🌙 DreamLens")
-st.subheader("Cuenta tu sueño. Visualiza lo que tu mente imaginó mientras dormías.")
+st.title("🌙 DreamLens App")
+st.subheader("Cuenta tu sueño y visualiza lo que tu mente imaginó mientras dormías!")
 
 with st.expander("¿Cómo funciona?"):
     st.markdown("""
     1. Escribe tu sueño con tantos detalles como puedas.
     2. DreamLens lo interpreta simbólicamente.
-    3. Se genera una mini historia.
-    4. Se crean imágenes realistas según tu descripción.
+    3. Se genera una mini historia literaria.
+    4. Se crea una imagen visual onírica basada en lo que contaste.
     """)
 
-dream_input = st.text_area("¿Qué soñaste anoche?", height=250, placeholder="Ej: Estaba en un bosque donde los árboles hablaban...")
+# Entrada del usuario
+dream_input = st.text_area(
+    "¿Qué soñaste anoche?",
+    height=250,
+    placeholder="Ej: Estaba en un bosque donde los árboles hablaban..."
+)
 
+# Botón principal
 if st.button("Interpretar y Visualizar"):
     if not dream_input.strip():
         st.warning("Por favor, escribe tu sueño.")
@@ -41,7 +46,7 @@ Sueño: {dream_input}
             )
             interpretation = interp_response.choices[0].message.content
 
-            # Historia literaria
+            # Historia onírica
             story_prompt = f"""
 Convierte este sueño en una breve historia literaria onírica y poética (máximo 3 párrafos):
 
@@ -54,7 +59,7 @@ Convierte este sueño en una breve historia literaria onírica y poética (máxi
             )
             story = story_response.choices[0].message.content
 
-            # Imagen realista del sueño
+            # Imagen generada
             image_prompt = f"Una escena realista y onírica basada en este sueño: {dream_input}"
             image_response = client.images.generate(
                 prompt=image_prompt,
