@@ -14,9 +14,9 @@ def obtener_datos_hidrologicos():
         if response.status_code == 200:
             return pd.DataFrame(response.json())
         else:
-            return pd.read_csv("data/rios_peru_sample.csv")  # fallback local
+            return pd.read_csv("rios_peru_sample.csv")  # fallback local
     except:
-        return pd.read_csv("data/rios_peru_sample.csv")
+        return pd.read_csv("rios_peru_sample.csv")
 
 # Cargar datos
 df = obtener_datos_hidrologicos()
